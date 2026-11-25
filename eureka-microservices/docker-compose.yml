@@ -1,0 +1,98 @@
+services:
+
+  # ---------- Partie 1 : Eureka Server ----------
+  eureka:
+    build: ./eureka-server
+    container_name: eureka
+    ports: ["8761:8761"]
+    networks: [microservices]
+
+  # ---------- Base MySQL pour Job ----------
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: jobdb
+    ports: ["3307:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [microservices]
+
+  # ---------- Partie 2 : Candidat (H2) ----------
+  candidat:
+    build: ./candidat-service
+    container_name: candidat
+    depends_on: [eureka]
+    environment:
+      SERVER_PORT: 8081
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka
+    ports: ["8081:8081"]
+    restart: on-failure
+    networks: [microservices]
+
+  # 2e instance du MEME microservice (Partie 2, étape 4)
+  candidat-2:
+    build: ./candidat-service
+    container_name: candidat-2
+    depends_on: [eureka]
+    environment:
+      SERVER_PORT: 8085
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka
+    ports: ["8085:8085"]
+    restart: on-failure
+    networks: [microservices]
+
+  # ---------- Partie 2 : Job (MySQL) ----------
+  job:
+    build: ./job-service
+    container_name: job
+    depends_on:
+      eureka: { condition: service_started }
+      mysql:  { condition: service_healthy }
+    environment:
+      SERVER_PORT: 8082
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/jobdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka:8761/eureka
+    ports: ["8082:8082"]
+    restart: on-failure
+    networks: [microservices]
+
+  # ---------- Partie 3 : Meeting (Node.js) ----------
+  meeting:
+    build: ./meeting-service
+    container_name: meeting
+    depends_on: [eureka]
+    environment:
+      PORT: 8083
+      EUREKA_HOST: eureka
+      EUREKA_PORT: 8761
+      EUREKA_INSTANCE_HOST: meeting
+    ports: ["8083:8083"]
+    restart: on-failure
+    networks: [microservices]
+
+  # ---------- Partie 3 : Notification (Python) ----------
+  notification:
+    build: ./notification-service
+    container_name: notification
+    depends_on: [eureka]
+    environment:
+      PORT: 8084
+      EUREKA_SERVER: http://eureka:8761/eureka
+      EUREKA_INSTANCE_HOST: notification
+    ports: ["8084:8084"]
+    restart: on-failure
+    networks: [microservices]
+
+networks:
+  microservices:
+
+volumes:
+  mysql-data:

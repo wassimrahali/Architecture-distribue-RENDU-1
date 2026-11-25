@@ -1,0 +1,10 @@
+{
+  "name": "meeting-service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "eureka-js-client": "^4.5.0",
+    "express": "^4.19.2"
+  }
+}
