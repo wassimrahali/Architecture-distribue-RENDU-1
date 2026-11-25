@@ -72,3 +72,4 @@ Ajouter `spring-boot-starter-security` à `eureka-server`, une `SecurityFilterCh
 - Dans Docker, `eureka.instance.prefer-ip-address=true` permet aux services de s'atteindre via l'IP du conteneur.
 - H2 console : http://localhost:8081/h2-console (JDBC URL `jdbc:h2:mem:candidatdb`, user `sa`).
 # Architecture-distribue-RENDU-1
+# Architecture-distribue-RENDU-1
